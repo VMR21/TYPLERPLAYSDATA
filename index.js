@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const API_URL = "https://services.rainbet.com/v1/external/affiliates?start_at=2025-05-01&end_at=2025-05-31&key=yJXEBkgryTtlOSo2OrgxjtdgwNNOvScO";
-const SELF_URL = "https://projectgambadata.onrender.com/leaderboard/top14";
+const SELF_URL = "https://typlerplaysdata.onrender.com/leaderboard/top14";
 
 let cachedData = [];
 
