@@ -4,7 +4,7 @@ import fetch from "node-fetch";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const API_URL = "https://services.rainbet.com/v1/external/affiliates?start_at=2025-05-11&end_at=2025-06-11&key=yJXEBkgryTtlOSo2OrgxjtdgwNNOvScO";
+const API_URL = "https://services.rainbet.com/v1/external/affiliates?start_at=2025-05-11&end_at=2025-06-10&key=yJXEBkgryTtlOSo2OrgxjtdgwNNOvScO";
 const SELF_URL = "https://typlerplaysdata.onrender.com/leaderboard/top14";
 
 let cachedData = [];
