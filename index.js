@@ -9,8 +9,9 @@ const SELF_URL = "https://typlerplaysdata.onrender.com/leaderboard/top14";
 
 let cachedData = [];
 
+// ✅ CORS headers manually
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Origin", "*"); // Allow all origins
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type");
   next();
@@ -25,53 +26,26 @@ async function fetchAndCacheData() {
   try {
     const response = await fetch(API_URL);
     const json = await response.json();
+    if (!json.affiliates) throw new Error("No data");
 
-    if (!json.affiliates || !Array.isArray(json.affiliates)) {
-      throw new Error("Invalid affiliate data");
-    }
-
-    // Step 1: Remove TYLERGOAT11
-    const filtered = json.affiliates.filter(entry => entry.username !== "TYLERGOAT11");
-
-    // Step 2: Sort and get top 10
-    const sorted = filtered.sort((a, b) => parseFloat(b.wagered_amount) - parseFloat(a.wagered_amount));
+    const sorted = json.affiliates.sort((a, b) => parseFloat(b.wagered_amount) - parseFloat(a.wagered_amount));
     const top10 = sorted.slice(0, 10);
+    if (top10.length >= 2) [top10[0], top10[1]] = [top10[1], top10[0]];
 
-    // Step 3: Swap top 2
-    if (top10.length >= 2) {
-      [top10[0], top10[1]] = [top10[1], top10[0]];
-    }
-
-    // Step 4: Take the 10th and remove it
-    const removed = top10.pop(); // remove 10th person
-
-    // Step 5: Add $200 to the removed user's wager
-    const tylerWagered = parseFloat(removed.wagered_amount) + 200;
-
-    // Step 6: Create TYLERGOAT11 entry
-    const tylerEntry = {
-      username: "TYLERGOAT11",
-      wagered_amount: tylerWagered.toString()
-    };
-
-    // Step 7: Final list = top 9 + TYLERGOAT11
-    const finalList = [...top10, tylerEntry];
-
-    // Step 8: Mask and store
-    cachedData = finalList.map(entry => ({
+    cachedData = top10.map(entry => ({
       username: maskUsername(entry.username),
       wagered: Math.round(parseFloat(entry.wagered_amount)),
       weightedWager: Math.round(parseFloat(entry.wagered_amount))
     }));
 
-    console.log(`[✅] Leaderboard updated — top 2 swapped, TYLERGOAT11 added at bottom`);
+    console.log([✅] Leaderboard updated);
   } catch (err) {
     console.error("[❌] Failed to fetch Rainbet data:", err.message);
   }
 }
 
 fetchAndCacheData();
-setInterval(fetchAndCacheData, 5 * 60 * 1000);
+setInterval(fetchAndCacheData, 5 * 60 * 1000); // every 5 minutes
 
 app.get("/leaderboard/top14", (req, res) => {
   res.json(cachedData);
@@ -79,8 +53,8 @@ app.get("/leaderboard/top14", (req, res) => {
 
 setInterval(() => {
   fetch(SELF_URL)
-    .then(() => console.log(`[🔁] Self-pinged ${SELF_URL}`))
+    .then(() => console.log([🔁] Self-pinged ${SELF_URL}))
     .catch(err => console.error("[⚠️] Self-ping failed:", err.message));
-}, 270000);
+}, 270000); // every 4.5 mins
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(🚀 Running on port ${PORT}));
