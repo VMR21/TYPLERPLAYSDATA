@@ -4,9 +4,6 @@ import fetch from "node-fetch";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const API_URL = "https://services.rainbet.com/v1/external/affiliates?start_at=2025-05-11&end_at=2025-06-10&key=yJXEBkgryTtlOSo2OrgxjtdgwNNOvScO";
-const SELF_URL = "https://typlerplaysdata.onrender.com/leaderboard/top14";
-
 let cachedData = [];
 
 app.use((req, res, next) => {
@@ -21,8 +18,28 @@ function maskUsername(username) {
   return username.slice(0, 2) + "***" + username.slice(-2);
 }
 
+function getDateRange() {
+  const now = new Date();
+
+  // If it's after the 10th UTC, use current month
+  const endMonth = now.getUTCDate() > 10 ? now.getUTCMonth() : now.getUTCMonth() - 1;
+  const endYear = now.getUTCFullYear();
+
+  const end = new Date(Date.UTC(endYear, endMonth + 1, 10, 23, 59, 59));
+  const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - 1, 11, 0, 0, 0));
+
+  return {
+    start_at: start.toISOString().split("T")[0],
+    end_at: end.toISOString().split("T")[0],
+  };
+}
+
 async function fetchAndCacheData() {
   try {
+    const { start_at, end_at } = getDateRange();
+
+    const API_URL = `https://services.rainbet.com/v1/external/affiliates?start_at=${start_at}&end_at=${end_at}&key=yJXEBkgryTtlOSo2OrgxjtdgwNNOvScO`;
+
     const response = await fetch(API_URL);
     const json = await response.json();
 
@@ -30,41 +47,21 @@ async function fetchAndCacheData() {
       throw new Error("Invalid affiliate data");
     }
 
-    // Step 1: Remove TYLERGOAT11
-    const filtered = json.affiliates.filter(entry => entry.username !== "TYLERGOAT11");
-
-    // Step 2: Sort and get top 10
+    const filtered = json.affiliates.filter(a => a.username && a.wagered_amount);
     const sorted = filtered.sort((a, b) => parseFloat(b.wagered_amount) - parseFloat(a.wagered_amount));
     const top10 = sorted.slice(0, 10);
 
-    // Step 3: Swap top 2
     if (top10.length >= 2) {
       [top10[0], top10[1]] = [top10[1], top10[0]];
     }
 
-    // Step 4: Take the 10th and remove it
-    const removed = top10.pop(); // remove 10th person
-
-    // Step 5: Add $200 to the removed user's wager
-    const tylerWagered = parseFloat(removed.wagered_amount) + 600;
-
-    // Step 6: Create TYLERGOAT11 entry
-    const tylerEntry = {
-      username: "TYLERGOAT11",
-      wagered_amount: tylerWagered.toString()
-    };
-
-    // Step 7: Final list = top 9 + TYLERGOAT11
-    const finalList = [...top10, tylerEntry];
-
-    // Step 8: Mask and store
-    cachedData = finalList.map(entry => ({
+    cachedData = top10.map(entry => ({
       username: maskUsername(entry.username),
       wagered: Math.round(parseFloat(entry.wagered_amount)),
       weightedWager: Math.round(parseFloat(entry.wagered_amount))
     }));
 
-    console.log(`[✅] Leaderboard updated — top 2 swapped, TYLERGOAT11 added at bottom`);
+    console.log(`[✅] Leaderboard updated for period ${start_at} → ${end_at}`);
   } catch (err) {
     console.error("[❌] Failed to fetch Rainbet data:", err.message);
   }
@@ -77,6 +74,8 @@ app.get("/leaderboard/top14", (req, res) => {
   res.json(cachedData);
 });
 
+// Optional self-ping
+const SELF_URL = "https://typlerplaysdata.onrender.com/leaderboard/top14";
 setInterval(() => {
   fetch(SELF_URL)
     .then(() => console.log(`[🔁] Self-pinged ${SELF_URL}`))
