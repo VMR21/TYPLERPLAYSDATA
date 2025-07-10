@@ -21,18 +21,20 @@ function maskUsername(username) {
 function getDateRange() {
   const now = new Date();
 
-  // If it's after the 10th UTC, use current month
-  const endMonth = now.getUTCDate() > 10 ? now.getUTCMonth() : now.getUTCMonth() - 1;
-  const endYear = now.getUTCFullYear();
+  let month = now.getUTCMonth();
+  let year = now.getUTCFullYear();
 
-  const end = new Date(Date.UTC(endYear, endMonth + 1, 10, 23, 59, 59));
-  const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - 1, 11, 0, 0, 0));
+  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0));
+
+  // Get last day of current month
+  const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59)); // 0th day of next month = last day of current month
 
   return {
     start_at: start.toISOString().split("T")[0],
     end_at: end.toISOString().split("T")[0],
   };
 }
+
 
 async function fetchAndCacheData() {
   try {
